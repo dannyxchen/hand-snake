@@ -13,7 +13,7 @@
         --color-secondary: #00aaff;
         --color-accent: #ff0055;
         --color-text: #e0e0e0;
-        --color-panel: rgba(0, 0, 0, 0.8);
+        --color-panel: rgba(10, 10, 12, 0.8);
       }
 
       body {
@@ -25,7 +25,7 @@
         padding: 0;
       }
 
-      /* Utility Classes Replacement */
+      /* Layout */
       .w-full { width: 100%; }
       .h-screen { height: 100vh; }
       .flex { display: flex; }
@@ -46,143 +46,171 @@
       /* Typography */
       h1 { font-family: 'Orbitron', sans-serif; margin: 0; }
       .text-title { 
-        font-size: 2.5rem; 
         font-weight: 900; 
         font-style: italic;
         background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
       }
       .font-mono { font-family: 'Courier New', monospace; }
       
       /* Backgrounds & Effects */
       .retro-grid {
-        background-image: linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
-        background-size: 40px 40px;
+        background-image: 
+          linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
       }
       
       .neon-text {
-        text-shadow: 0 0 10px rgba(0, 255, 255, 0.7), 0 0 20px rgba(0, 255, 255, 0.5);
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3);
       }
       
       .glass-panel {
         background: var(--color-panel);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(0, 255, 255, 0.3);
-        box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
-        border-radius: 8px;
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
       }
 
       /* Game Specific */
       .video-bg {
         object-fit: cover;
-        opacity: 0.2;
+        opacity: 0.15;
         transform: scaleX(-1); /* Mirror effect */
         pointer-events: none;
+        filter: grayscale(100%) contrast(1.2);
       }
 
       .game-canvas {
         display: block;
         margin: 0 auto;
-        border: 2px solid rgba(0, 255, 255, 0.3);
-        border-radius: 4px;
-        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
-        background: rgba(0,0,0,0.6);
+        border: 1px solid rgba(0, 255, 255, 0.2);
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.05);
+        /* Very transparent to allow video to show through */
+        background: rgba(0, 0, 0, 0.15); 
       }
 
       /* Inputs & Buttons */
       .cyber-input {
-        background: rgba(0, 0, 0, 0.5);
-        border: 1px solid var(--color-secondary);
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid #333;
+        border-bottom: 2px solid var(--color-secondary);
         color: white;
-        padding: 12px;
+        padding: 14px;
         text-align: center;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
         font-weight: bold;
         text-transform: uppercase;
         outline: none;
         width: 100%;
         box-sizing: border-box;
         font-family: 'Orbitron', sans-serif;
+        transition: all 0.3s ease;
       }
       .cyber-input:focus {
         border-color: var(--color-primary);
-        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
+        background: rgba(0, 255, 255, 0.05);
       }
 
       .cyber-btn {
-        background: linear-gradient(45deg, var(--color-secondary), var(--color-primary));
+        background: linear-gradient(90deg, var(--color-secondary), var(--color-primary));
         border: none;
-        color: #000;
-        padding: 15px 30px;
-        font-size: 1.25rem;
-        font-weight: 900;
+        color: #050505;
+        padding: 16px 32px;
+        font-size: 1.1rem;
+        font-weight: 800;
         text-transform: uppercase;
         cursor: pointer;
-        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-        transition: transform 0.1s, filter 0.2s;
+        clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+        transition: all 0.2s ease;
         width: 100%;
         margin-top: 1rem;
         letter-spacing: 2px;
         font-family: 'Orbitron', sans-serif;
+        position: relative;
+        overflow: hidden;
+      }
+      .cyber-btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: 0.5s;
       }
       .cyber-btn:hover {
-        filter: brightness(1.2);
         transform: translateY(-2px);
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+      }
+      .cyber-btn:hover::before {
+        left: 100%;
       }
       .cyber-btn:disabled {
-        filter: grayscale(1);
+        background: #333;
+        color: #666;
         cursor: not-allowed;
-        opacity: 0.5;
+        box-shadow: none;
+        transform: none;
       }
 
       .status-badge {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: rgba(0,0,0,0.6);
+        background: rgba(0,0,0,0.8);
         border: 1px solid rgba(255,255,255,0.1);
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 1px;
+        font-family: 'Orbitron', monospace;
       }
       
       .status-dot {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
       }
       .dot-green { background: #00ff00; box-shadow: 0 0 8px #00ff00; }
-      .dot-yellow { background: #ffff00; }
+      .dot-yellow { background: #ffff00; animation: blink 1s infinite; }
       .dot-red { background: #ff0000; }
+      
+      @keyframes blink { 50% { opacity: 0.5; } }
 
       .leaderboard-row {
         display: flex;
         justify-content: space-between;
-        padding: 4px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        font-family: 'Orbitron', monospace;
-        font-size: 0.9rem;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-family: 'Rajdhani', monospace;
+        font-weight: 600;
+        font-size: 1rem;
       }
       .leaderboard-row:last-child { border-bottom: none; }
-      .highlight { color: var(--color-primary); text-shadow: 0 0 5px var(--color-primary); }
+      .highlight { color: var(--color-primary); text-shadow: 0 0 8px rgba(0,255,204,0.3); }
 
       /* Loading State */
       .loading-text {
         color: var(--color-primary);
         font-family: 'Orbitron', sans-serif;
-        font-size: 1.5rem;
-        animation: pulse 1s infinite;
+        font-size: 1.2rem;
+        letter-spacing: 4px;
+        animation: pulse 1.5s infinite ease-in-out;
       }
       @keyframes pulse {
-        0% { opacity: 0.5; }
-        50% { opacity: 1; }
-        100% { opacity: 0.5; }
+        0%, 100% { opacity: 0.4; transform: scale(0.98); }
+        50% { opacity: 1; transform: scale(1); }
       }
+      
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+      ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
   <script type="importmap">
 {
@@ -197,7 +225,7 @@
 </head>
   <body>
     <div id="root" class="flex items-center justify-center h-screen">
-       <div class="loading-text">INITIALIZING SYSTEM...</div>
+       <div class="loading-text">SYSTEM INITIALIZING...</div>
     </div>
     <script type="module" src="./index.tsx"></script>
   </body>

@@ -171,6 +171,18 @@
       .leaderboard-row:last-child { border-bottom: none; }
       .highlight { color: var(--color-primary); text-shadow: 0 0 5px var(--color-primary); }
 
+      /* Loading State */
+      .loading-text {
+        color: var(--color-primary);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.5rem;
+        animation: pulse 1s infinite;
+      }
+      @keyframes pulse {
+        0% { opacity: 0.5; }
+        50% { opacity: 1; }
+        100% { opacity: 0.5; }
+      }
     </style>
   <script type="importmap">
 {
@@ -184,6 +196,9 @@
 </script>
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root" class="flex items-center justify-center h-screen">
+       <div class="loading-text">INITIALIZING SYSTEM...</div>
+    </div>
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>

@@ -13,6 +13,7 @@ export const SnakeGame: React.FC = () => {
   const [score, setScore] = useState(0);
   const [debugVector, setDebugVector] = useState<MotionVector>({ x: 0, y: 0, intensity: 0 });
   const [liveState, setLiveState] = useState<LiveConnectionState>({ isConnected: false, isConnecting: false, error: null });
+  const [camError, setCamError] = useState<string | null>(null);
   
   // Player & Leaderboard State
   const [playerName, setPlayerName] = useState('');
@@ -54,9 +55,16 @@ export const SnakeGame: React.FC = () => {
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          // Ensure video plays (sometimes needed on mobile/safari)
+          try {
+            await videoRef.current.play();
+          } catch (playErr) {
+             console.error("Auto-play failed:", playErr);
+          }
         }
       } catch (err) {
         console.error("Error accessing webcam:", err);
+        setCamError("CAMERA ACCESS DENIED. PLEASE ALLOW CAMERA PERMISSIONS TO PLAY.");
       }
     };
     startCamera();
@@ -82,8 +90,9 @@ export const SnakeGame: React.FC = () => {
   };
 
   const startGame = async () => {
+    // Check API Key
     if (!process.env.API_KEY) {
-        alert("API_KEY missing in environment variables");
+        alert("System Error: API_KEY missing in environment variables");
         return;
     }
     
@@ -102,19 +111,24 @@ export const SnakeGame: React.FC = () => {
     // Connect Gemini Live if not already
     if (!liveServiceRef.current) {
         setLiveState(prev => ({ ...prev, isConnecting: true }));
-        const service = new GeminiLiveService(process.env.API_KEY);
-        liveServiceRef.current = service;
-        
-        await service.connect(
-            (msg) => console.log("Gemini:", msg),
-            (status) => {
-                setLiveState({ 
-                    isConnected: status === 'connected', 
-                    isConnecting: false, 
-                    error: status === 'error' ? 'Connection Failed' : null 
-                });
-            }
-        );
+        try {
+            const service = new GeminiLiveService(process.env.API_KEY);
+            liveServiceRef.current = service;
+            
+            await service.connect(
+                (msg) => console.log("Gemini:", msg),
+                (status) => {
+                    setLiveState({ 
+                        isConnected: status === 'connected', 
+                        isConnecting: false, 
+                        error: status === 'error' ? 'Connection Failed' : null 
+                    });
+                }
+            );
+        } catch (e) {
+            console.error("Failed to init service", e);
+            setLiveState({ isConnected: false, isConnecting: false, error: "Init Failed" });
+        }
     }
   };
 
@@ -131,7 +145,9 @@ export const SnakeGame: React.FC = () => {
     // 1. Handle Motion Detection (Every Frame)
     if (videoRef.current && motionCanvasRef.current) {
         const ctx = motionCanvasRef.current.getContext('2d', { willReadFrequently: true });
-        if (ctx && videoRef.current.readyState === 4) {
+        
+        // Ensure video is ready before drawing
+        if (ctx && videoRef.current.readyState >= 2) {
             const w = motionCanvasRef.current.width;
             const h = motionCanvasRef.current.height;
             
@@ -360,8 +376,6 @@ export const SnakeGame: React.FC = () => {
                  </div>
                  
                  {/* Detected Motion Indicator (Joystick style) */}
-                 {/* Note: We don't invert X here because detectMotion already handles the logic. 
-                     If detectMotion says X=1, that means RIGHT, so we move indicator RIGHT. */}
                  <div 
                     style={{
                         position: 'absolute',
@@ -388,25 +402,33 @@ export const SnakeGame: React.FC = () => {
             {gameState === GameState.IDLE && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(5, 5, 5, 0.85)', backdropFilter: 'blur(5px)', zIndex: 20 }}>
                     <div style={{ width: '100%', maxWidth: '300px', textAlign: 'center' }}>
-                        <label style={{ display: 'block', color: 'var(--color-secondary)', marginBottom: '10px', fontFamily: 'Orbitron', letterSpacing: '2px' }}>
-                            ENTER PILOT ID
-                        </label>
-                        <input 
-                            type="text" 
-                            value={playerName}
-                            onChange={(e) => setPlayerName(e.target.value)}
-                            className="cyber-input"
-                            placeholder="PLAYER 1"
-                            maxLength={10}
-                        />
-                        
-                        <button 
-                            onClick={startGame}
-                            disabled={!playerName.trim()}
-                            className="cyber-btn"
-                        >
-                            INITIATE SYSTEM
-                        </button>
+                        {camError ? (
+                             <div style={{ color: 'var(--color-accent)', border: '1px solid var(--color-accent)', padding: '10px', marginBottom: '20px' }}>
+                                {camError}
+                             </div>
+                        ) : (
+                            <>
+                                <label style={{ display: 'block', color: 'var(--color-secondary)', marginBottom: '10px', fontFamily: 'Orbitron', letterSpacing: '2px' }}>
+                                    ENTER PILOT ID
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={playerName}
+                                    onChange={(e) => setPlayerName(e.target.value)}
+                                    className="cyber-input"
+                                    placeholder="PLAYER 1"
+                                    maxLength={10}
+                                />
+                                
+                                <button 
+                                    onClick={startGame}
+                                    disabled={!playerName.trim()}
+                                    className="cyber-btn"
+                                >
+                                    INITIATE SYSTEM
+                                </button>
+                            </>
+                        )}
 
                         <div style={{ marginTop: '20px', fontSize: '0.8rem', color: '#666' }}>
                             <p>INSTRUCTIONS:</p>

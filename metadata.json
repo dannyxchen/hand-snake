@@ -1,0 +1,8 @@
+{
+  "name": "Hand Snake",
+  "description": "A gesture-controlled Snake game where Gemini Live watches you play and provides real-time commentary.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

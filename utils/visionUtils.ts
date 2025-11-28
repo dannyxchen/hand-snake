@@ -9,14 +9,11 @@ export function detectMotion(
   height: number
 ): MotionVector {
   // Use a slightly larger grid for better precision
-  const scaledWidth = 100;
-  const scaledHeight = 75;
-  
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
   
   // Sampling stride (smaller stride = more precision but more CPU)
-  const stride = 4; 
+  const stride = 8; 
   
   let totalX = 0;
   let totalY = 0;
@@ -36,8 +33,8 @@ export function detectMotion(
         // Combined intensity difference
         const diff = (rDiff + gDiff + bDiff) / 3;
         
-        // Higher threshold to ignore camera noise (ISO grain)
-        if (diff > 40) { 
+        // Threshold to ignore camera noise
+        if (diff > 25) { 
           changeCount++;
           // Accumulate the position of the change
           totalX += x;
@@ -50,8 +47,8 @@ export function detectMotion(
   // Store current frame
   prevFrame = new Uint8ClampedArray(data);
 
-  // If not enough movement, return zero vector (dead zone)
-  const motionThreshold = (width * height) / (stride * stride) * 0.005; // 0.5% of pixels must move
+  // Lower motion threshold for better responsiveness
+  const motionThreshold = (width * height) / (stride * stride) * 0.001; 
   if (changeCount < motionThreshold) {
     return { x: 0, y: 0, intensity: 0 };
   }
@@ -61,14 +58,18 @@ export function detectMotion(
   const avgY = totalY / changeCount;
 
   // Calculate vector relative to the CENTER of the frame (width/2, height/2)
-  // X is inverted because webcam is usually mirrored for the user
   const centerX = width / 2;
   const centerY = height / 2;
 
   // Normalize to -1...1
-  // We divide by (width/2) so that the edge of screen is 1.0
-  let normX = (avgX - centerX) / (centerX * 0.6); // 0.6 sensitivity factor (reach edge faster)
-  let normY = (avgY - centerY) / (centerY * 0.6);
+  // CRITICAL FIX: Webcams are mirrored. 
+  // If I move Right (my physical right), the object moves to the Left of the pixel buffer.
+  // So avgX < centerX. 
+  // We want that to represent +1 (Right) for the game.
+  // Old: (avgX - centerX) -> Negative result.
+  // New: (centerX - avgX) -> Positive result.
+  let normX = (centerX - avgX) / (centerX * 0.5); // 0.5 sensitivity (reach max speed at half screen)
+  let normY = (avgY - centerY) / (centerY * 0.5);
 
   // Clamp values
   normX = Math.max(-1, Math.min(1, normX));

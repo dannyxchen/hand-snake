@@ -4,23 +4,173 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Neon Hand Snake</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600&display=swap');
+      
+      :root {
+        --color-bg: #050505;
+        --color-primary: #00ffcc;
+        --color-secondary: #00aaff;
+        --color-accent: #ff0055;
+        --color-text: #e0e0e0;
+        --color-panel: rgba(0, 0, 0, 0.8);
+      }
+
       body {
         font-family: 'Rajdhani', sans-serif;
-        background-color: #050505;
-        color: #e0e0e0;
-        overflow: hidden; /* Prevent scrolling on mobile */
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
       }
+
+      /* Utility Classes Replacement */
+      .w-full { width: 100%; }
+      .h-screen { height: 100vh; }
+      .flex { display: flex; }
+      .flex-col { flex-direction: column; }
+      .items-center { align-items: center; }
+      .justify-center { justify-content: center; }
+      .justify-between { justify-content: space-between; }
+      .relative { position: relative; }
+      .absolute { position: absolute; }
+      .fixed { position: fixed; }
+      .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+      .text-center { text-align: center; }
+      .hidden { display: none; }
+      .z-10 { z-index: 10; }
+      .p-4 { padding: 1rem; }
+      .gap-4 { gap: 1rem; }
+      
+      /* Typography */
+      h1 { font-family: 'Orbitron', sans-serif; margin: 0; }
+      .text-title { 
+        font-size: 2.5rem; 
+        font-weight: 900; 
+        font-style: italic;
+        background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+      }
+      .font-mono { font-family: 'Courier New', monospace; }
+      
+      /* Backgrounds & Effects */
+      .retro-grid {
+        background-image: linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+      }
+      
       .neon-text {
         text-shadow: 0 0 10px rgba(0, 255, 255, 0.7), 0 0 20px rgba(0, 255, 255, 0.5);
       }
-      .retro-grid {
-        background-image: linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
-        background-size: 40px 40px;
+      
+      .glass-panel {
+        background: var(--color-panel);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        border-radius: 8px;
       }
+
+      /* Game Specific */
+      .video-bg {
+        object-fit: cover;
+        opacity: 0.2;
+        transform: scaleX(-1); /* Mirror effect */
+        pointer-events: none;
+      }
+
+      .game-canvas {
+        display: block;
+        margin: 0 auto;
+        border: 2px solid rgba(0, 255, 255, 0.3);
+        border-radius: 4px;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        background: rgba(0,0,0,0.6);
+      }
+
+      /* Inputs & Buttons */
+      .cyber-input {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--color-secondary);
+        color: white;
+        padding: 12px;
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+        font-family: 'Orbitron', sans-serif;
+      }
+      .cyber-input:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+      }
+
+      .cyber-btn {
+        background: linear-gradient(45deg, var(--color-secondary), var(--color-primary));
+        border: none;
+        color: #000;
+        padding: 15px 30px;
+        font-size: 1.25rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        cursor: pointer;
+        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        transition: transform 0.1s, filter 0.2s;
+        width: 100%;
+        margin-top: 1rem;
+        letter-spacing: 2px;
+        font-family: 'Orbitron', sans-serif;
+      }
+      .cyber-btn:hover {
+        filter: brightness(1.2);
+        transform: translateY(-2px);
+      }
+      .cyber-btn:disabled {
+        filter: grayscale(1);
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0,0,0,0.6);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .dot-green { background: #00ff00; box-shadow: 0 0 8px #00ff00; }
+      .dot-yellow { background: #ffff00; }
+      .dot-red { background: #ff0000; }
+
+      .leaderboard-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        font-family: 'Orbitron', monospace;
+        font-size: 0.9rem;
+      }
+      .leaderboard-row:last-child { border-bottom: none; }
+      .highlight { color: var(--color-primary); text-shadow: 0 0 5px var(--color-primary); }
+
     </style>
   <script type="importmap">
 {

@@ -4,9 +4,7 @@ import { detectMotion } from '../utils/visionUtils';
 import { GeminiLiveService } from '../services/liveApiService';
 import { blobToBase64 } from '../utils/audioUtils';
 
-const GRID_SIZE = 20;
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
-const INITIAL_SPEED = 150;
 const LEADERBOARD_KEY = 'neon_snake_leaderboard';
 
 export const SnakeGame: React.FC = () => {
@@ -19,7 +17,6 @@ export const SnakeGame: React.FC = () => {
   // Player & Leaderboard State
   const [playerName, setPlayerName] = useState('');
   const [leaderboard, setLeaderboard] = useState<ScoreEntry[]>([]);
-  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
 
   // Refs for mutable game data
   const snakeRef = useRef<Position[]>(INITIAL_SNAKE);
@@ -71,7 +68,7 @@ export const SnakeGame: React.FC = () => {
 
   const saveScore = (finalScore: number) => {
       const entry: ScoreEntry = {
-          name: playerName || 'Anonymous',
+          name: playerName || 'Unknown Pilot',
           score: finalScore,
           timestamp: Date.now()
       };
@@ -91,9 +88,8 @@ export const SnakeGame: React.FC = () => {
     }
     
     if (!playerName.trim()) {
-        const name = prompt("Enter Pilot Name:", "Player 1");
-        if (name) setPlayerName(name);
-        else setPlayerName("Player 1");
+       alert("Please enter a name");
+       return;
     }
 
     setGameState(GameState.PLAYING);
@@ -159,8 +155,8 @@ export const SnakeGame: React.FC = () => {
             setDebugVector(smoothed);
 
             // Determine Direction from Smoothed Vector
-            // We use a Dead Zone of 0.2
-            const THRESHOLD = 0.2; 
+            // We use a Dead Zone of 0.3 to prevent accidental turns
+            const THRESHOLD = 0.3; 
             
             // To prevent rapid switching, we prioritize the dominant axis
             if (Math.abs(smoothed.x) > Math.abs(smoothed.y)) {
@@ -190,6 +186,7 @@ export const SnakeGame: React.FC = () => {
     }
 
     // 2. Update Snake Logic (Fixed Time Step)
+    const INITIAL_SNAKE_SPEED = 150;
     if (timestamp - lastUpdateRef.current > INITIAL_SNAKE_SPEED) {
         updateSnake();
         lastUpdateRef.current = timestamp;
@@ -284,8 +281,14 @@ export const SnakeGame: React.FC = () => {
     snakeRef.current.forEach((seg, index) => {
         const x = seg.x * cellSize;
         const y = seg.y * cellSize;
-        if (index === 0) ctx.fillStyle = '#e0ffff';
-        else ctx.fillStyle = '#00ffcc';
+        // Head is different color
+        if (index === 0) {
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#ffffff';
+        } else {
+            ctx.fillStyle = '#00ffcc';
+            ctx.shadowColor = '#00ffcc';
+        }
         
         ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
     });
@@ -302,124 +305,134 @@ export const SnakeGame: React.FC = () => {
     }
   }, [gameState, loop]);
 
-  const INITIAL_SNAKE_SPEED = 150; // ms per move
-
   return (
-    <div className="relative w-full h-screen flex flex-col items-center justify-center retro-grid">
+    <div className="flex flex-col items-center justify-center retro-grid w-full h-screen relative">
       
-      {/* Background Video Feed (Mirrored) */}
+      {/* Background Video Feed (Mirrored via CSS) */}
       <video 
         ref={videoRef} 
         autoPlay 
         muted 
         playsInline 
-        className="absolute top-0 left-0 w-full h-full object-cover opacity-20 transform -scale-x-100 pointer-events-none"
+        className="absolute inset-0 w-full h-full video-bg"
       />
 
-      {/* Motion Analysis Canvas (Hidden logic) */}
+      {/* Motion Analysis Canvas (Hidden) */}
       <canvas ref={motionCanvasRef} width={320} height={240} className="hidden" />
 
       {/* Main Game UI */}
-      <div className="z-10 flex flex-col items-center gap-4 p-4 w-full max-w-4xl">
+      <div className="z-10 flex flex-col items-center gap-4 p-4 w-full" style={{ maxWidth: '800px' }}>
         
         {/* Header / Score */}
-        <div className="flex justify-between w-full max-w-2xl items-end mb-2">
+        <div className="flex justify-between items-center w-full" style={{ marginBottom: '10px' }}>
             <div>
-                <h1 className="text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 neon-text">
-                    NEON SNAKE
-                </h1>
-                <p className="text-xs text-cyan-300/70 font-mono">
+                <h1 className="text-title">NEON SNAKE</h1>
+                <p className="font-mono" style={{ color: 'var(--color-secondary)' }}>
                     PILOT: {playerName || 'UNREGISTERED'}
                 </p>
             </div>
-            <div className="text-right">
-                 <div className="text-xs text-cyan-300/70 font-mono">SCORE</div>
-                 <div className="text-4xl font-bold text-white neon-text">{score}</div>
+            <div className="text-center">
+                 <div style={{ fontSize: '0.8rem', color: '#888' }}>SCORE</div>
+                 <div className="neon-text" style={{ fontSize: '3rem', fontWeight: 'bold' }}>{score}</div>
             </div>
         </div>
 
         {/* Game Container */}
-        <div className="relative border-2 border-cyan-500/50 rounded-lg shadow-[0_0_30px_rgba(0,255,255,0.3)] bg-black/80 backdrop-blur-sm overflow-hidden">
+        <div className="relative glass-panel" style={{ padding: '4px', display: 'inline-block' }}>
             <canvas 
                 ref={gameCanvasRef} 
                 width={Math.min(window.innerWidth - 32, 600)} 
                 height={Math.min(window.innerWidth - 32, 600) * (ROWS/COLS)} 
-                className="block"
+                className="game-canvas"
             />
             
-            {/* Improved Gesture Feedback Radar */}
+            {/* Gesture Feedback Radar (HUD) */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                  {/* Center Deadzone Marker */}
-                 <div className="w-16 h-16 border border-white/10 rounded-full absolute flex items-center justify-center">
-                    <div className="w-1 h-1 bg-white/40 rounded-full"></div>
+                 <div style={{ 
+                     width: '80px', height: '80px', 
+                     border: '1px dashed rgba(255,255,255,0.2)', 
+                     borderRadius: '50%', 
+                     position: 'absolute',
+                     display: 'flex', alignItems: 'center', justifyContent: 'center'
+                 }}>
+                    <div style={{ width: '4px', height: '4px', background: 'rgba(255,255,255,0.5)', borderRadius: '50%' }}></div>
                  </div>
                  
                  {/* Detected Motion Indicator (Joystick style) */}
+                 {/* Note: We don't invert X here because detectMotion already handles the logic. 
+                     If detectMotion says X=1, that means RIGHT, so we move indicator RIGHT. */}
                  <div 
-                    className="w-6 h-6 border-2 border-cyan-400 bg-cyan-400/20 rounded-full absolute transition-transform duration-75 flex items-center justify-center shadow-[0_0_10px_cyan]"
                     style={{
-                        transform: `translate(${-debugVector.x * 100}px, ${debugVector.y * 100}px)`, // Invert X for mirror feel
-                        opacity: debugVector.intensity > 0 ? 1 : 0.2
+                        position: 'absolute',
+                        width: '20px', height: '20px',
+                        borderRadius: '50%',
+                        background: 'rgba(0, 255, 204, 0.5)',
+                        border: '2px solid #00ffcc',
+                        boxShadow: '0 0 10px #00ffcc',
+                        transform: `translate(${debugVector.x * 100}px, ${debugVector.y * 100}px)`,
+                        opacity: debugVector.intensity > 0 ? 1 : 0.2,
+                        transition: 'transform 0.1s linear'
                     }}
-                 >
-                    <div className="w-1 h-1 bg-cyan-200 rounded-full"></div>
-                 </div>
+                 ></div>
                  
-                 {/* Direction Text */}
+                 {/* Direction Text Overlay */}
                  {gameState === GameState.PLAYING && (
-                     <div className="absolute top-4 right-4 bg-black/50 px-2 py-1 rounded text-cyan-400 font-mono text-xs border border-cyan-900">
-                         VECTOR: [{(-debugVector.x).toFixed(2)}, {debugVector.y.toFixed(2)}]<br/>
-                         DIR: {directionRef.current}
+                     <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.7)', padding: '5px 10px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '12px', color: '#00ffcc' }}>
+                         CMD: {directionRef.current}
                      </div>
                  )}
             </div>
 
-            {/* START SCREEN */}
+            {/* START SCREEN OVERLAY */}
             {gameState === GameState.IDLE && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                    <div className="w-full max-w-xs space-y-4">
-                        <label className="block text-cyan-300 font-mono text-sm uppercase tracking-wider">Pilot Name</label>
+                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(5, 5, 5, 0.85)', backdropFilter: 'blur(5px)', zIndex: 20 }}>
+                    <div style={{ width: '100%', maxWidth: '300px', textAlign: 'center' }}>
+                        <label style={{ display: 'block', color: 'var(--color-secondary)', marginBottom: '10px', fontFamily: 'Orbitron', letterSpacing: '2px' }}>
+                            ENTER PILOT ID
+                        </label>
                         <input 
                             type="text" 
                             value={playerName}
                             onChange={(e) => setPlayerName(e.target.value)}
-                            className="w-full bg-black/50 border border-cyan-500 text-white p-3 text-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-cyan-400 uppercase placeholder-cyan-800"
-                            placeholder="ENTER NAME"
+                            className="cyber-input"
+                            placeholder="PLAYER 1"
                             maxLength={10}
                         />
                         
                         <button 
                             onClick={startGame}
                             disabled={!playerName.trim()}
-                            className="w-full group relative px-8 py-4 bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold text-xl uppercase tracking-widest clip-path-polygon transition-all"
-                            style={{ clipPath: 'polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%)' }}
+                            className="cyber-btn"
                         >
-                            INITIATE LINK
-                            <div className="absolute inset-0 bg-white/20 group-hover:animate-pulse"></div>
+                            INITIATE SYSTEM
                         </button>
 
-                        <div className="text-center mt-4">
-                            <p className="text-cyan-200/60 text-xs">
-                                MOVE HAND/BODY TO CONTROL<br/>
-                                <span className="text-cyan-400">CENTER</span> = NEUTRAL
-                            </p>
+                        <div style={{ marginTop: '20px', fontSize: '0.8rem', color: '#666' }}>
+                            <p>INSTRUCTIONS:</p>
+                            <p style={{ color: '#00ffcc' }}>MOVE BODY TO STEER</p>
+                            <p>CENTER = NEUTRAL</p>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* GAME OVER & LEADERBOARD */}
+            {/* GAME OVER & LEADERBOARD OVERLAY */}
             {gameState === GameState.GAME_OVER && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fadeIn">
-                    <h2 className="text-5xl font-black text-red-500 mb-2 neon-text tracking-widest">TERMINATED</h2>
-                    <p className="text-xl text-white mb-6 font-mono">SCORE: <span className="text-cyan-400 text-3xl">{score}</span></p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(5, 5, 5, 0.95)', zIndex: 20 }}>
+                    <h2 className="text-title" style={{ color: 'var(--color-accent)', marginBottom: '0' }}>GAME OVER</h2>
+                    <p style={{ fontSize: '1.5rem', fontFamily: 'Orbitron', marginBottom: '20px' }}>
+                        SCORE: <span style={{ color: 'var(--color-primary)' }}>{score}</span>
+                    </p>
                     
                     {/* Leaderboard Table */}
-                    <div className="w-full max-w-xs bg-black/50 border border-white/10 rounded mb-6 p-4">
-                        <h3 className="text-cyan-500 font-bold mb-3 text-sm tracking-widest border-b border-white/10 pb-2">TOP PILOTS</h3>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <div className="glass-panel" style={{ width: '80%', maxWidth: '300px', padding: '15px', marginBottom: '20px' }}>
+                        <h3 style={{ color: 'var(--color-secondary)', borderBottom: '1px solid #333', paddingBottom: '5px', marginTop: 0, fontSize: '0.9rem', letterSpacing: '2px' }}>
+                            HIGH SCORES
+                        </h3>
+                        <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
                             {leaderboard.map((entry, i) => (
-                                <div key={entry.timestamp + i} className={`flex justify-between text-sm font-mono ${entry.timestamp === leaderboard[0].timestamp && score === entry.score ? 'text-yellow-400 animate-pulse' : 'text-gray-400'}`}>
+                                <div key={entry.timestamp + i} className={`leaderboard-row ${entry.score === score && entry.name === playerName ? 'highlight' : ''}`}>
                                     <span>#{i+1} {entry.name}</span>
                                     <span>{entry.score}</span>
                                 </div>
@@ -429,21 +442,26 @@ export const SnakeGame: React.FC = () => {
 
                     <button 
                         onClick={startGame}
-                        className="px-8 py-3 border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black transition-colors font-bold uppercase tracking-wider"
+                        className="cyber-btn"
+                        style={{ width: 'auto', padding: '10px 40px' }}
                     >
-                        Replay
+                        RETRY
                     </button>
                 </div>
             )}
         </div>
 
-        {/* Gemini Status Footer */}
-        <div className="flex items-center gap-2 mt-4 px-4 py-2 rounded-full bg-black/40 border border-white/10">
-            <div className={`w-2 h-2 rounded-full ${liveState.isConnected ? 'bg-green-500 animate-pulse' : liveState.isConnecting ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-            <span className="text-xs font-mono text-gray-400 uppercase">
-                CO-PILOT AI: {liveState.isConnected ? 'ONLINE' : liveState.isConnecting ? 'CONNECTING...' : 'OFFLINE'}
-            </span>
+        {/* Footer: Status */}
+        <div className="status-badge">
+            <div className={`status-dot ${liveState.isConnected ? 'dot-green' : liveState.isConnecting ? 'dot-yellow' : 'dot-red'}`}></div>
+            <span>AI LINK: {liveState.isConnected ? 'ESTABLISHED' : liveState.isConnecting ? 'CONNECTING...' : 'OFFLINE'}</span>
         </div>
+        
+        {!liveState.isConnected && !liveState.isConnecting && (
+             <div style={{ fontSize: '10px', color: '#555', maxWidth: '400px', textAlign: 'center' }}>
+                 Note: Check API Key and Permissions for commentary.
+             </div>
+        )}
       </div>
     </div>
   );

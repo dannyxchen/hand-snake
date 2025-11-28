@@ -9,11 +9,12 @@
       
       :root {
         --color-bg: #050505;
-        --color-primary: #00ffcc;
-        --color-secondary: #00aaff;
+        --color-primary: #00f2ff;
+        --color-secondary: #7000ff;
         --color-accent: #ff0055;
-        --color-text: #e0e0e0;
-        --color-panel: rgba(10, 10, 12, 0.8);
+        --color-text: #ffffff;
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --glass-bg: rgba(10, 10, 15, 0.4);
       }
 
       body {
@@ -48,59 +49,65 @@
       .text-title { 
         font-weight: 900; 
         font-style: italic;
-        background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+        background: linear-gradient(135deg, #fff, var(--color-primary));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        text-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
+        letter-spacing: 2px;
       }
       .font-mono { font-family: 'Courier New', monospace; }
       
       /* Backgrounds & Effects */
       .retro-grid {
         background-image: 
-          linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
-        background-size: 50px 50px;
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
       }
       
       .neon-text {
-        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3);
+        text-shadow: 0 0 10px rgba(0, 242, 255, 0.6), 0 0 20px rgba(0, 242, 255, 0.3);
       }
       
+      /* Modern Glass Panel */
       .glass-panel {
-        background: var(--color-panel);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        border-radius: 16px;
       }
 
       /* Game Specific */
       .video-bg {
         object-fit: cover;
-        opacity: 0.15;
+        opacity: 0.4; /* Increased visibility of user */
         transform: scaleX(-1); /* Mirror effect */
         pointer-events: none;
-        filter: grayscale(100%) contrast(1.2);
+        filter: grayscale(80%) contrast(1.1) brightness(0.8);
+        transition: opacity 0.5s ease;
       }
 
       .game-canvas {
         display: block;
         margin: 0 auto;
-        border: 1px solid rgba(0, 255, 255, 0.2);
-        box-shadow: 0 0 30px rgba(0, 255, 255, 0.05);
-        /* Very transparent to allow video to show through */
-        background: rgba(0, 0, 0, 0.15); 
+        /* Semi-transparent dark overlay to make snake pop against video */
+        background: rgba(0, 0, 0, 0.3); 
+        border-radius: 12px;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255,255,255,0.05);
       }
 
       /* Inputs & Buttons */
       .cyber-input {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid #333;
-        border-bottom: 2px solid var(--color-secondary);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
         color: white;
-        padding: 14px;
+        padding: 16px;
         text-align: center;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: bold;
         text-transform: uppercase;
         outline: none;
@@ -108,46 +115,54 @@
         box-sizing: border-box;
         font-family: 'Orbitron', sans-serif;
         transition: all 0.3s ease;
+        letter-spacing: 2px;
       }
       .cyber-input:focus {
         border-color: var(--color-primary);
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
-        background: rgba(0, 255, 255, 0.05);
+        box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
       }
 
       .cyber-btn {
-        background: linear-gradient(90deg, var(--color-secondary), var(--color-primary));
+        background: var(--color-text);
         border: none;
-        color: #050505;
+        color: #000;
         padding: 16px 32px;
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 800;
         text-transform: uppercase;
         cursor: pointer;
-        clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         width: 100%;
         margin-top: 1rem;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
         font-family: 'Orbitron', sans-serif;
+        border-radius: 8px;
         position: relative;
         overflow: hidden;
+        z-index: 1;
       }
+      
       .cyber-btn::before {
         content: '';
         position: absolute;
-        top: 0; left: -100%;
-        width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-        transition: 0.5s;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+        z-index: -1;
+        transition: opacity 0.3s ease;
+        opacity: 0;
       }
+
       .cyber-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        color: #fff;
       }
+      
       .cyber-btn:hover::before {
-        left: 100%;
+        opacity: 1;
       }
+
       .cyber-btn:disabled {
         background: #333;
         color: #666;
@@ -155,49 +170,35 @@
         box-shadow: none;
         transform: none;
       }
-
-      .status-badge {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(0,0,0,0.8);
-        border: 1px solid rgba(255,255,255,0.1);
-        padding: 8px 16px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-family: 'Orbitron', monospace;
+      .cyber-btn:disabled::before {
+        display: none;
       }
-      
-      .status-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-      }
-      .dot-green { background: #00ff00; box-shadow: 0 0 8px #00ff00; }
-      .dot-yellow { background: #ffff00; animation: blink 1s infinite; }
-      .dot-red { background: #ff0000; }
-      
-      @keyframes blink { 50% { opacity: 0.5; } }
 
+      /* Leaderboard */
       .leaderboard-row {
         display: flex;
         justify-content: space-between;
-        padding: 8px 0;
+        padding: 10px 12px;
         border-bottom: 1px solid rgba(255,255,255,0.05);
         font-family: 'Rajdhani', monospace;
         font-weight: 600;
         font-size: 1rem;
+        transition: background 0.2s;
+      }
+      .leaderboard-row:hover {
+        background: rgba(255,255,255,0.02);
       }
       .leaderboard-row:last-child { border-bottom: none; }
-      .highlight { color: var(--color-primary); text-shadow: 0 0 8px rgba(0,255,204,0.3); }
+      .highlight { 
+        color: var(--color-primary); 
+        background: rgba(0, 242, 255, 0.05);
+      }
 
       /* Loading State */
       .loading-text {
         color: var(--color-primary);
         font-family: 'Orbitron', sans-serif;
-        font-size: 1.2rem;
+        font-size: 1rem;
         letter-spacing: 4px;
         animation: pulse 1.5s infinite ease-in-out;
       }
@@ -208,24 +209,23 @@
       
       /* Scrollbar */
       ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
-      ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #555; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
     </style>
   <script type="importmap">
 {
   "imports": {
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
   }
 }
 </script>
 </head>
   <body>
     <div id="root" class="flex items-center justify-center h-screen">
-       <div class="loading-text">SYSTEM INITIALIZING...</div>
+       <div class="loading-text">INITIALIZING OPTICAL SENSORS...</div>
     </div>
     <script type="module" src="./index.tsx"></script>
   </body>

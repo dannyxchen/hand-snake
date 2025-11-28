@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { GameState, Direction, Position, MotionVector, LiveConnectionState, ScoreEntry } from '../types';
+import { GameState, Direction, Position, MotionVector, ScoreEntry } from '../types';
 import { detectMotion } from '../utils/visionUtils';
-import { GeminiLiveService } from '../services/liveApiService';
-import { blobToBase64 } from '../utils/audioUtils';
 
 const INITIAL_SNAKE = [{ x: 10, y: 10 }];
 const LEADERBOARD_KEY = 'neon_snake_leaderboard';
@@ -17,7 +15,6 @@ export const SnakeGame: React.FC = () => {
   const [countdown, setCountdown] = useState(0);
   const [isStarting, setIsStarting] = useState(false); // Prevents double clicks
   const [debugVector, setDebugVector] = useState<MotionVector>({ x: 0, y: 0, intensity: 0 });
-  const [liveState, setLiveState] = useState<LiveConnectionState>({ isConnected: false, isConnecting: false, error: null });
   const [camError, setCamError] = useState<string | null>(null);
   
   // Player & Leaderboard State
@@ -37,7 +34,6 @@ export const SnakeGame: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const motionCanvasRef = useRef<HTMLCanvasElement>(null);
   const gameCanvasRef = useRef<HTMLCanvasElement>(null);
-  const liveServiceRef = useRef<GeminiLiveService | null>(null);
 
   // Load Leaderboard on mount
   useEffect(() => {
@@ -69,7 +65,7 @@ export const SnakeGame: React.FC = () => {
         }
       } catch (err) {
         console.error("Error accessing webcam:", err);
-        setCamError("CAMERA ACCESS DENIED. PLEASE ALLOW CAMERA PERMISSIONS TO PLAY.");
+        setCamError("CAMERA ACCESS DENIED. PLEASE ALLOW CAMERA PERMISSIONS.");
       }
     };
     startCamera();
@@ -95,7 +91,7 @@ export const SnakeGame: React.FC = () => {
   };
 
   // Actually start the game logic
-  const startGame = useCallback(async () => {
+  const startGame = useCallback(() => {
     setGameState(GameState.PLAYING);
     setScore(0);
     scoreRef.current = 0;
@@ -104,42 +100,17 @@ export const SnakeGame: React.FC = () => {
     smoothedVectorRef.current = { x: 0, y: 0 };
     spawnFood();
     setIsStarting(false);
-    
-    // Connect Gemini Live if not already
-    if (!liveServiceRef.current && process.env.API_KEY) {
-        setLiveState(prev => ({ ...prev, isConnecting: true }));
-        try {
-            const service = new GeminiLiveService(process.env.API_KEY);
-            liveServiceRef.current = service;
-            
-            await service.connect(
-                (msg) => console.log("Gemini:", msg),
-                (status) => {
-                    setLiveState({ 
-                        isConnected: status === 'connected', 
-                        isConnecting: false, 
-                        error: status === 'error' ? 'Connection Failed' : null 
-                    });
-                }
-            );
-        } catch (e) {
-            console.error("Failed to init service", e);
-            setLiveState({ isConnected: false, isConnecting: false, error: "Init Failed" });
-        }
-    }
   }, []);
 
-  // Revised Countdown Logic - Single Source of Truth
+  // Revised Countdown Logic
   const startSequence = () => {
       if (!playerName.trim()) return;
-      if (!process.env.API_KEY) { alert("API KEY MISSING"); return; }
       if (isStarting) return;
 
       setIsStarting(true);
       let count = 3;
       setCountdown(count);
       
-      // Use Interval instead of recursive timeout for better stability
       const interval = setInterval(() => {
           count--;
           if (count <= 0) {
@@ -212,16 +183,6 @@ export const SnakeGame: React.FC = () => {
                         directionRef.current = newDir;
                     }
                 }
-            }
-
-            // Stream to Gemini (Throttle)
-            if (Math.floor(timestamp / 500) % 2 === 0 && liveServiceRef.current) {
-                 motionCanvasRef.current.toBlob(async (blob) => {
-                    if (blob) {
-                        const base64 = await blobToBase64(blob);
-                        liveServiceRef.current?.sendVideoFrame(base64);
-                    }
-                 }, 'image/jpeg', 0.5);
             }
         }
     }
@@ -300,7 +261,7 @@ export const SnakeGame: React.FC = () => {
     const cellSize = cvs.width / COLS;
 
     // Draw Grid (Subtle)
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for(let i=0; i<=COLS; i++) {
@@ -313,7 +274,7 @@ export const SnakeGame: React.FC = () => {
 
     // Draw Food
     ctx.fillStyle = '#ff0055';
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 15;
     ctx.shadowColor = '#ff0055';
     const fx = foodRef.current.x * cellSize;
     const fy = foodRef.current.y * cellSize;
@@ -331,11 +292,11 @@ export const SnakeGame: React.FC = () => {
         
         if (index === 0) {
             ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00f2ff';
+            ctx.shadowBlur = 20;
         } else {
             // Gradient effect along body
-            ctx.fillStyle = `rgba(0, 255, 204, ${1 - index / (snakeRef.current.length + 5)})`;
+            ctx.fillStyle = `rgba(0, 242, 255, ${1 - index / (snakeRef.current.length + 8)})`;
             ctx.shadowBlur = 0;
         }
         
@@ -369,27 +330,27 @@ export const SnakeGame: React.FC = () => {
       <canvas ref={motionCanvasRef} width={320} height={240} className="hidden" />
 
       {/* Main UI */}
-      <div className="z-10 flex flex-col items-center gap-4 p-4 w-full" style={{ maxWidth: '800px' }}>
+      <div className="z-10 flex flex-col items-center gap-6 p-4 w-full" style={{ maxWidth: '800px' }}>
         
-        {/* Header */}
-        <div className="flex justify-between items-center w-full glass-panel" style={{ padding: '10px 20px', borderRadius: '50px' }}>
+        {/* Header - Separate Glass Module */}
+        <div className="flex justify-between items-center w-full glass-panel" style={{ padding: '12px 24px', borderRadius: '24px' }}>
             <div className="flex items-center gap-4">
-                <div style={{ width: '40px', height: '40px', background: 'var(--color-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#000' }}>
+                <div style={{ width: '44px', height: '44px', background: 'var(--color-primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: '#000', fontSize: '1.2rem' }}>
                     {playerName ? playerName.charAt(0).toUpperCase() : '?'}
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.7rem', color: '#888' }}>PILOT</div>
-                    <div style={{ fontWeight: 'bold', color: '#fff' }}>{playerName || 'UNREGISTERED'}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', letterSpacing: '1px' }}>PILOT</div>
+                    <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '1.1rem' }}>{playerName || 'WAITING...'}</div>
                 </div>
             </div>
             <div className="text-right">
-                 <div style={{ fontSize: '0.7rem', color: '#888' }}>SCORE</div>
-                 <div className="neon-text" style={{ fontSize: '2rem', fontWeight: 'bold', lineHeight: 1 }}>{score}</div>
+                 <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.6)', letterSpacing: '1px' }}>SCORE</div>
+                 <div className="neon-text" style={{ fontSize: '2.4rem', fontWeight: '900', lineHeight: 1, color: '#fff' }}>{score}</div>
             </div>
         </div>
 
-        {/* Game Container */}
-        <div className="relative glass-panel" style={{ padding: '4px', display: 'inline-block', boxShadow: '0 0 50px rgba(0,255,204,0.05)' }}>
+        {/* Game Container - Separate Glass Module */}
+        <div className="relative" style={{ display: 'inline-block' }}>
             <canvas 
                 ref={gameCanvasRef} 
                 width={Math.min(window.innerWidth - 32, 600)} 
@@ -406,47 +367,48 @@ export const SnakeGame: React.FC = () => {
                        position: 'absolute',
                        width: '60px', height: '60px',
                        borderRadius: '50%',
-                       border: '2px dashed rgba(255, 255, 255, 0.2)',
+                       border: '2px dashed rgba(255, 255, 255, 0.15)',
                        display: 'flex', alignItems: 'center', justifyContent: 'center'
                    }}>
-                        <div style={{ width: '10px', height: '1px', background: 'rgba(255,255,255,0.3)' }}></div>
-                        <div style={{ width: '1px', height: '10px', background: 'rgba(255,255,255,0.3)', position: 'absolute' }}></div>
+                        <div style={{ width: '8px', height: '1px', background: 'rgba(255,255,255,0.3)' }}></div>
+                        <div style={{ width: '1px', height: '8px', background: 'rgba(255,255,255,0.3)', position: 'absolute' }}></div>
                    </div>
 
                    {/* Active Motion Dot */}
                    <div 
                       style={{
                           position: 'absolute',
-                          width: '20px', height: '20px',
+                          width: '18px', height: '18px',
                           borderRadius: '50%',
-                          background: '#00ffcc',
-                          boxShadow: '0 0 15px #00ffcc',
+                          background: 'var(--color-primary)',
+                          boxShadow: '0 0 15px var(--color-primary)',
                           transform: `translate(${debugVector.x * 100}px, ${debugVector.y * 100}px)`,
                           opacity: 0.9,
-                          transition: 'transform 0.05s linear', // faster update for smoother feel
+                          transition: 'transform 0.05s linear',
                       }}
                    />
 
                    <div style={{ 
                        position: 'absolute', 
-                       bottom: 20, 
-                       background: 'rgba(0,0,0,0.5)', 
-                       padding: '4px 12px', 
+                       bottom: 24, 
+                       background: 'rgba(0,0,0,0.6)', 
+                       padding: '6px 16px', 
                        borderRadius: '20px', 
                        border: '1px solid rgba(255,255,255,0.1)',
                        fontFamily: 'Orbitron', 
-                       fontSize: '10px', 
-                       color: '#00ffcc',
-                       letterSpacing: '1px'
+                       fontSize: '11px', 
+                       color: 'var(--color-primary)',
+                       letterSpacing: '2px',
+                       backdropFilter: 'blur(4px)'
                    }}>
-                       NEURAL LINK // {directionRef.current}
+                       DIRECTION // {directionRef.current}
                    </div>
               </div>
             )}
                  
             {/* COUNTDOWN OVERLAY */}
             {countdown > 0 && (
-                <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 50 }}>
+                <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 50, borderRadius: '12px' }}>
                     <div className="neon-text" style={{ fontSize: '8rem', fontWeight: '900', color: '#fff' }}>
                         {countdown}
                     </div>
@@ -455,9 +417,9 @@ export const SnakeGame: React.FC = () => {
 
             {/* MENU / START OVERLAY */}
             {gameState === GameState.IDLE && countdown === 0 && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(5, 5, 5, 0.85)', backdropFilter: 'blur(8px)', zIndex: 20 }}>
+                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(5, 5, 5, 0.65)', backdropFilter: 'blur(12px)', zIndex: 20, borderRadius: '12px' }}>
                     <div style={{ width: '100%', maxWidth: '320px', textAlign: 'center' }}>
-                        <h1 className="text-title" style={{ marginBottom: '2rem', fontSize: '2rem' }}>NEON SNAKE</h1>
+                        <h1 className="text-title" style={{ marginBottom: '2rem', fontSize: '2.5rem' }}>NEON SNAKE</h1>
                         
                         {camError ? (
                              <div style={{ color: 'var(--color-accent)', border: '1px solid var(--color-accent)', padding: '15px', marginBottom: '20px', background: 'rgba(255,0,0,0.1)' }}>
@@ -481,20 +443,17 @@ export const SnakeGame: React.FC = () => {
                                     disabled={!playerName.trim() || isStarting}
                                     className="cyber-btn"
                                 >
-                                    {isStarting ? 'INITIALIZING...' : 'INITIALIZE LINK'}
+                                    {isStarting ? 'INITIALIZING...' : 'START MISSION'}
                                 </button>
                             </>
                         )}
 
-                        <div style={{ marginTop: '2rem', fontSize: '0.75rem', color: '#666', borderTop: '1px solid #222', paddingTop: '1rem' }}>
-                            <div className="flex justify-between" style={{ marginBottom: '5px' }}>
-                                <span>CONTROL</span>
-                                <span style={{ color: '#00ffcc' }}>MOTION CENTER</span>
+                        <div style={{ marginTop: '2.5rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+                            <div className="flex justify-between" style={{ marginBottom: '8px' }}>
+                                <span>CONTROL SYSTEM</span>
+                                <span style={{ color: 'var(--color-primary)' }}>OPTICAL FLOW</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span>AI ASSIST</span>
-                                <span style={{ color: '#00ffcc' }}>GEMINI LIVE</span>
-                            </div>
+                            <div style={{ fontSize: '0.7rem', marginTop: '8px' }}>Move your body to steer the snake.</div>
                         </div>
                     </div>
                 </div>
@@ -502,18 +461,18 @@ export const SnakeGame: React.FC = () => {
 
             {/* GAME OVER OVERLAY */}
             {gameState === GameState.GAME_OVER && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(5, 5, 5, 0.95)', zIndex: 30 }}>
-                    <h2 style={{ fontFamily: 'Orbitron', fontSize: '3rem', margin: 0, color: 'var(--color-accent)', textShadow: '0 0 20px rgba(255,0,85,0.5)' }}>CRASHED</h2>
-                    <div style={{ fontSize: '1rem', color: '#fff', marginBottom: '2rem', letterSpacing: '2px' }}>
+                <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(5, 5, 5, 0.85)', backdropFilter: 'blur(10px)', zIndex: 30, borderRadius: '12px' }}>
+                    <h2 style={{ fontFamily: 'Orbitron', fontSize: '3.5rem', margin: 0, color: 'var(--color-accent)', textShadow: '0 0 30px rgba(255,0,85,0.6)' }}>CRASHED</h2>
+                    <div style={{ fontSize: '1.2rem', color: '#fff', marginBottom: '2rem', letterSpacing: '4px' }}>
                         FINAL SCORE: <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>{score}</span>
                     </div>
                     
-                    <div className="glass-panel" style={{ width: '85%', maxWidth: '320px', padding: '1rem', marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.8rem', color: '#888' }}>
+                    <div className="glass-panel" style={{ width: '85%', maxWidth: '320px', padding: '1rem', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.6)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.8rem', color: '#888', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
                             <span>PILOT</span>
                             <span>SCORE</span>
                         </div>
-                        <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                        <div style={{ maxHeight: '160px', overflowY: 'auto', paddingRight: '4px' }}>
                             {leaderboard.map((entry, i) => (
                                 <div key={entry.timestamp + i} className={`leaderboard-row ${entry.score === score && entry.name === playerName ? 'highlight' : ''}`}>
                                     <span>#{i+1} {entry.name}</span>
@@ -527,18 +486,12 @@ export const SnakeGame: React.FC = () => {
                         onClick={startSequence}
                         disabled={isStarting}
                         className="cyber-btn"
-                        style={{ width: 'auto', padding: '12px 40px' }}
+                        style={{ width: 'auto', padding: '14px 40px' }}
                     >
                         REBOOT SYSTEM
                     </button>
                 </div>
             )}
-        </div>
-
-        {/* Footer Status */}
-        <div className="status-badge" style={{ opacity: 0.8 }}>
-            <div className={`status-dot ${liveState.isConnected ? 'dot-green' : liveState.isConnecting ? 'dot-yellow' : 'dot-red'}`}></div>
-            <span>GEMINI LIVE: {liveState.isConnected ? 'ONLINE' : liveState.isConnecting ? 'SYNCING...' : 'OFFLINE'}</span>
         </div>
       </div>
     </div>
